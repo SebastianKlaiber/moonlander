@@ -1,22 +1,25 @@
 import 'package:flame/components.dart';
 import 'package:flame/input.dart';
-import 'package:moonlander/main.dart';
+import 'package:flutter/cupertino.dart';
 
-class PauseComponent extends SpriteComponent
-    with Tappable, HasGameRef<MoonlanderGame> {
+class PauseComponent extends HudButtonComponent {
   PauseComponent({
-    required Vector2 position,
+    required EdgeInsets margin,
     required Sprite sprite,
-  }) : super(position: position, size: Vector2(50, 25), sprite: sprite);
-
-  @override
-  bool onTapDown(TapDownInfo info) {
-    if (gameRef.overlays.isActive('pause')) {
-      gameRef.overlays.remove('pause');
-    } else {
-      gameRef.overlays.add('pause');
-    }
-
-    return super.onTapDown(info);
-  }
+    required VoidCallback onPressed,
+    Sprite? spritePressed,
+  }) : super(
+          button: SpriteComponent(
+            position: Vector2.zero(),
+            sprite: sprite,
+            size: Vector2(50, 25),
+          ),
+          buttonDown: SpriteComponent(
+            position: Vector2.zero(),
+            sprite: spritePressed,
+            size: Vector2(50, 25),
+          ),
+          margin: margin,
+          onPressed: onPressed,
+        );
 }

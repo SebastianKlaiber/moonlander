@@ -19,27 +19,33 @@ Future<void> main() async {
   final game = MoonlanderGame();
 
   runApp(
-    GameWidget(
-      game: game,
-      loadingBuilder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-      errorBuilder: (context, ex) {
-        debugPrint(ex.toString());
+    MaterialApp(
+      home: GameWidget(
+        game: game,
+        loadingBuilder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        errorBuilder: (context, ex) {
+          debugPrint(ex.toString());
 
-        return const Center(
-          child: Text('Sorry, something went wrong. Reload me'),
-        );
-      },
-      overlayBuilderMap: {
-        'pause': (context, MoonlanderGame game) => PauseMenu(game: game),
-      },
+          return const Center(
+            child: Text('Sorry, something went wrong. Reload me'),
+          );
+        },
+        overlayBuilderMap: {
+          'pause': (context, MoonlanderGame game) => PauseMenu(game: game),
+        },
+      ),
     ),
   );
 }
 
 class MoonlanderGame extends FlameGame
-    with HasCollidables, HasTappables, HasKeyboardHandlerComponents {
+    with
+        HasCollidables,
+        HasTappables,
+        HasKeyboardHandlerComponents,
+        HasDraggables {
   void onOverlayChanged() {
     if (overlays.isActive('pause')) {
       pauseEngine();
@@ -67,70 +73,51 @@ class MoonlanderGame extends FlameGame
 
   @override
   Future<void>? onLoad() async {
-    final pauseButton = await Sprite.load('PauseButton.png');
-    const stepTime = .3;
-    final textureSize = Vector2(16, 24);
-    const frameCount = 2;
-    final idle = await loadSpriteAnimation(
-      'ship_animation_idle.png',
-      SpriteAnimationData.sequenced(
-        amount: frameCount,
-        stepTime: stepTime,
-        textureSize: textureSize,
-      ),
+    final image = await images.load('joystick.png');
+    final sheet = SpriteSheet.fromColumnsAndRows(
+      image: image,
+      columns: 6,
+      rows: 1,
     );
-    final left = await loadSpriteAnimation(
-      'ship_animation_left.png',
-      SpriteAnimationData.sequenced(
-        amount: frameCount,
-        stepTime: stepTime,
-        textureSize: textureSize,
+    final joystick = JoystickComponent(
+      knob: SpriteComponent(
+        sprite: sheet.getSpriteById(1),
+        size: Vector2.all(100),
       ),
-    );
-    final right = await loadSpriteAnimation(
-      'ship_animation_right.png',
-      SpriteAnimationData.sequenced(
-        amount: frameCount,
-        stepTime: stepTime,
-        textureSize: textureSize,
+      background: SpriteComponent(
+        sprite: sheet.getSpriteById(0),
+        size: Vector2.all(150),
       ),
+      margin: const EdgeInsets.only(left: 40, bottom: 40),
     );
-    final farRight = await loadSpriteAnimation(
-      'ship_animation_far_right.png',
-      SpriteAnimationData.sequenced(
-        amount: frameCount,
-        stepTime: stepTime,
-        textureSize: textureSize,
-      ),
-    );
-    final farLeft = await loadSpriteAnimation(
-      'ship_animation_far_left.png',
-      SpriteAnimationData.sequenced(
-        amount: frameCount,
-        stepTime: stepTime,
-        textureSize: textureSize,
-      ),
-    );
-    final rocketAnimation = {
-      RocketState.idle: idle,
-      RocketState.left: left,
-      RocketState.right: right,
-      RocketState.farLeft: farLeft,
-      RocketState.farRight: farRight
-    };
+    unawaited(add(joystick));
 
     unawaited(
       add(
         RocketComponent(
           position: size / 2,
           size: Vector2(32, 48),
-          animation: rocketAnimation,
+          joystick: joystick,
         ),
       ),
     );
 
     unawaited(
-        add(PauseComponent(position: Vector2(0, 0), sprite: pauseButton)));
+      add(
+        PauseComponent(
+          margin: const EdgeInsets.all(5),
+          sprite: await Sprite.load('PauseButton.png'),
+          spritePressed: await Sprite.load('PauseButtonInvert.png'),
+          onPressed: () {
+            if (overlays.isActive('pause')) {
+              overlays.remove('pause');
+            } else {
+              overlays.add('pause');
+            }
+          },
+        ),
+      ),
+    );
 
     overlays.addListener(onOverlayChanged);
 
